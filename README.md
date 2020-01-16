@@ -15,6 +15,10 @@ Project is created with:
 * Bootstrap 4.4.1
 * Firebase 7.6.2
 
+## IMPORTANT!
+
+If you download this project, ensure to modify the 'environment.ts' file with your Firebase configuration. Otherwise, images uploaded will be storage in my database.
+
 ## Screenshots
 
 ![Image-photo Demo GIF](demo/demo.gif)
