@@ -1,10 +1,14 @@
 import { Injectable } from '@angular/core';
-import { AngularFirestore } from '@angular/fire/firestore';
+import {
+  AngularFirestore,
+  AngularFirestoreDocument,
+} from '@angular/fire/firestore';
 import * as firebase from 'firebase';
 import { FileItem } from '../models/file-item';
+import { Item } from '../models/item';
 
 @Injectable({
-  providedIn: 'root'
+  providedIn: 'root',
 })
 export class PhotoUploadService {
   private IMAGE_FOLDER = 'img';
@@ -34,7 +38,8 @@ export class PhotoUploadService {
         firebase.storage.TaskEvent.STATE_CHANGED,
         // When the upload is in progress
         (snapshot: firebase.storage.UploadTaskSnapshot) => {
-          item.progress = (snapshot.bytesTransferred / snapshot.totalBytes) * 100;
+          item.progress =
+            (snapshot.bytesTransferred / snapshot.totalBytes) * 100;
           console.log(`The current state is ${snapshot.state}`);
         },
         () => console.error(`There was an error with ${item.name}`),
@@ -55,5 +60,25 @@ export class PhotoUploadService {
    */
   private saveImage(image: { name: string; url: string }) {
     this.db.collection(`/${this.IMAGE_FOLDER}`).add(image);
+  }
+
+  /**
+   * First, we delete the image from the firebase storage
+   * Then, we delete the record from the collection
+   */
+  deleteImageFromStorage(image: Item) {
+    const storageRef = firebase.storage().ref();
+    const imageRef = storageRef.child(`${this.IMAGE_FOLDER}/${image.name}`);
+    imageRef
+      .delete()
+      .then(() => this.deleteImageFromDatabase(image.id))
+      .catch((error) => console.error('Ups, an error has ocurred! ', error));
+  }
+
+  private deleteImageFromDatabase(id: string) {
+    const doc: AngularFirestoreDocument<Item> = this.db
+      .collection(`/${this.IMAGE_FOLDER}`)
+      .doc<Item>(`/${id}`);
+    doc.delete();
   }
 }

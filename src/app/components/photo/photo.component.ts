@@ -1,31 +1,41 @@
 import { Component, OnInit } from '@angular/core';
-import { AngularFirestore, AngularFirestoreCollection } from '@angular/fire/firestore';
+import {
+  AngularFirestore,
+  AngularFirestoreCollection,
+} from '@angular/fire/firestore';
 import { Observable } from 'rxjs';
-
-export interface Item { name: string; url: string; }
+import { map } from 'rxjs/operators';
+import { PhotoUploadService } from 'src/app/services/photo-upload.service';
+import { Item } from 'src/app/models/item';
 
 @Component({
   selector: 'app-photo',
   templateUrl: './photo.component.html',
-  styles: []
+  styles: [],
 })
 export class PhotoComponent implements OnInit {
-
   private itemsCollection: AngularFirestoreCollection<Item>;
   items: Observable<Item[]>;
 
-  constructor(private readonly afs: AngularFirestore) {
+  constructor(
+    private readonly afs: AngularFirestore,
+    public photoUploadService: PhotoUploadService
+  ) {
     this.itemsCollection = afs.collection<Item>('img');
-    // .valueChanges() is simple. It just returns the
-    // JSON data without metadata. If you need the
-    // doc.id() in the value you must persist it your self
-    // or use .snapshotChanges() instead. See the addItem()
-    // method below for how to persist the id with
-    // valueChanges()
-    this.items = this.itemsCollection.valueChanges();
-   }
-
-  ngOnInit() {
+    this.items = this.itemsCollection.snapshotChanges().pipe(
+      map((actions) =>
+        actions.map((a) => {
+          const data = a.payload.doc.data() as Item;
+          const id = a.payload.doc.id;
+          return { id, ...data };
+        })
+      )
+    );
   }
 
+  ngOnInit() {}
+
+  deleteItem(item: Item) {
+    this.photoUploadService.deleteImageFromStorage(item);
+  }
 }
